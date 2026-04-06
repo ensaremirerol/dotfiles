@@ -1,0 +1,13 @@
+alias gadd='git add .'
+alias gcommit="git commit -S -m"
+alias gpush="git push"
+alias gpull="git pull"
+alias gdiff="git diff"
+alias gst="git status"
+alias glog="git log"
+alias glogp="git log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short --name-status"
+alias gclone="git clone"
+alias gsubinit="git submodule update --init --recursive"
+alias gsubupdate="git submodule update --recursive --remote"
+alias gsubstatus="git submodule status"
+alias gsquash="git rebase -i"

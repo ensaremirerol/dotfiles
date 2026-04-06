@@ -1,0 +1,9 @@
+alias dinspect="docker ps --all --format '{{.Names}} {{.ID}}' | fzf --header 'Select container' | awk '{print \$2}' | xargs docker inspect"
+alias dlogs="docker ps --all --format '{{.Names}} {{.ID}}' | fzf --header 'Select container' | awk '{print \$2}' | xargs docker logs"
+alias dstop="docker ps --filter 'status=running' --all --format '{{.Names}} {{.ID}}' | fzf -m --header 'Select container' | awk '{print \$2}' | xargs docker stop"
+alias dstart="docker ps --all --format '{{.Names}} {{.ID}}' | fzf -m --header 'Select container' | awk '{print \$2}' | xargs docker start"
+alias drestart="docker ps --filter 'status=running' --all --format '{{.Names}} {{.ID}}' | fzf -m --header 'Select container' | awk '{print \$2}' | xargs docker restart"
+alias dbash='docker exec -it $(docker ps --all --filter "status=running" --format "{{.Names}} {{.ID}}" | fzf --header "Select container" | awk "{print \$2}") bash'
+alias dvolume="docker ps --all --format '{{.Names}} {{.ID}}' | fzf --header 'Select container' | awk '{print \$2}' | xargs -I {} docker inspect {} --format '{{json .Mounts}}' | jq"
+alias dps="docker ps --all --format 'table {{.Names}}\t{{.ID}}\t{{.Status}}\t{{.Ports}}'"
+alias dimages="docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}'"

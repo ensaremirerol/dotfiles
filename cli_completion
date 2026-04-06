@@ -1,0 +1,21 @@
+check_command() {
+    if ! command -v "$1" > /dev/null 2>&1; then
+        return -1
+    fi
+    return 0
+}
+
+# BW completion for zsh
+if check_command "bw"; then
+    eval "$(bw completion --shell zsh)"
+fi
+# UV completion for zsh
+if check_command "uv"; then
+    eval "$(uv generate-shell-completion zsh)"
+fi
+# Docker CLI completions
+if check_command "docker"; then
+    fpath=($HOME/.docker/completions $fpath)
+fi
+autoload -Uz compinit
+compinit

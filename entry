@@ -1,0 +1,59 @@
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+DOTFILES_DIR="${0:A:h}"
+
+# Bootstrap .gitconfig symlink if not already pointing into this repo
+_gitconfig_target="$DOTFILES_DIR/gitconfig"
+if [ -f "$_gitconfig_target" ]; then
+    if [ ! -e "$HOME/.gitconfig" ] && [ ! -L "$HOME/.gitconfig" ]; then
+        ln -s "$_gitconfig_target" "$HOME/.gitconfig"
+        echo "dotfiles: linked ~/.gitconfig"
+    elif [ ! -L "$HOME/.gitconfig" ] || [ "$(readlink "$HOME/.gitconfig")" != "$_gitconfig_target" ]; then
+        echo "dotfiles: warning: ~/.gitconfig exists but is not linked to $DOTFILES_DIR/gitconfig"
+    fi
+fi
+unset _gitconfig_target
+
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"
+source $ZSH/oh-my-zsh.sh
+
+plugins=(git colored-man-pages colorize pip python)
+
+if [[ -n $VIRTUAL_ENV ]]; then
+    unset VSCODE_ENV_PREPEND VSCODE_ENV_REPLACE
+    source "$VIRTUAL_ENV/bin/activate"
+fi
+
+# Function to check if required commands are available
+check_command() {
+    if ! command -v "$1" > /dev/null 2>&1; then
+        return -1
+    fi
+    return 0
+}
+
+# If zoxide is installed, initialize it
+if check_command "zoxide"; then
+    eval "$(zoxide init --cmd cd zsh)"
+fi
+
+if check_command "yazi"; then
+    function y() {
+        local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+        yazi "$@" --cwd-file="$tmp"
+        IFS= read -r -d '' cwd < "$tmp"
+        [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+        rm -f -- "$tmp"
+    }
+fi
+
+
+source "$DOTFILES_DIR/path"
+source "$DOTFILES_DIR/aliases"
+source "$DOTFILES_DIR/git_aliases"
+if check_command "docker"; then
+    source "$DOTFILES_DIR/docker_aliases"
+fi
+source "$DOTFILES_DIR/cli_completion"

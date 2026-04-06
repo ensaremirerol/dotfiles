@@ -1,0 +1,84 @@
+#!/bin/bash
+
+MISSING_TOOLS=()
+check_command() {
+    if ! command -v "$1" > /dev/null 2>&1; then
+        MISSING_TOOLS+=("$1")
+    fi
+}
+check_command "openconnect"
+check_command "bw"
+
+if [ ${#MISSING_TOOLS[@]} -ne 0 ]; then
+    echo "Error: The following required tools are missing: ${MISSING_TOOLS[*]}"
+    echo "Please install them and try again."
+    exit 1
+fi
+
+LOG_FILE="$HOME/vpn_status.log"
+BW_ITEM_NAME="https://login.maastrichtuniversity.nl/"
+VPN_BIN="/usr/bin/openconnect"
+
+# Set these in your environment or a local ~/.vpnrc file
+# VPN_USER="your-university-id"
+# AUTH_GROUP="your-auth-group"
+if [ -f "$HOME/.vpnrc" ]; then
+    source "$HOME/.vpnrc"
+fi
+
+if [ -z "$VPN_USER" ] || [ -z "$AUTH_GROUP" ]; then
+    echo "Error: VPN_USER and AUTH_GROUP must be set (via environment or ~/.vpnrc)."
+    exit 1
+fi
+
+# Check if sudo credentials are cached, prompt if not
+if ! sudo -n true 2>/dev/null; then
+    echo "Please enter your sudo password:"
+    sudo -v
+fi
+
+# If log file longer than 1000 lines, truncate it
+if [ -f "$LOG_FILE" ] && [ $(wc -l < "$LOG_FILE") -gt 1000 ]; then
+    tail -n 1000 "$LOG_FILE" > "$LOG_FILE"
+fi
+
+if pgrep -x "openconnect" > /dev/null; then
+    echo "VPN is active. Disconnecting..."
+    sudo pkill -SIGINT openconnect
+    echo "Disconnected."
+    exit 0
+fi
+
+echo "VPN is inactive. Preparing to connect..."
+
+if [ -z "$BW_SESSION" ]; then
+    STATUS=$(bw status | jq -r .status)
+
+    if [ "$STATUS" = "locked" ]; then
+        echo "Bitwarden vault is locked. Please enter your Master Password:"
+        export BW_SESSION=$(bw unlock --raw)
+    elif [ "$STATUS" = "unauthenticated" ]; then
+        echo "Error: You are not logged into Bitwarden. Run 'bw login' first."
+        exit 1
+    fi
+fi
+
+PASS=$(bw get password "$BW_ITEM_NAME")
+CODE=$(bw get totp "$BW_ITEM_NAME")
+
+if [ -z "$PASS" ] || [ -z "$CODE" ]; then
+    echo "Error: Could not retrieve credentials from Bitwarden."
+    exit 1
+fi
+
+echo -e "$PASS\n$CODE" | sudo "$VPN_BIN" --protocol=anyconnect \
+  --background \
+  --non-inter \
+  --no-external-auth \
+  --useragent="AnyConnect" \
+  --user="$VPN_USER" \
+  --authgroup="$AUTH_GROUP" \
+  --passwd-on-stdin \
+  vpn.maastrichtuniversity.nl > "$LOG_FILE" 2>&1
+
+echo "Connection sequence started. Check $LOG_FILE for details."

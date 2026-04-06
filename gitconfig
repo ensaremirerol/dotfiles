@@ -1,0 +1,36 @@
+[user]
+	name = Ensar Emir Erol
+	email = ensaremir.erol99@gmail.com
+	signingkey = ~/.ssh/id_ed25519.pub
+[core]
+	editor = code --wait
+[color]
+	ui = true
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[push]
+    autoSetupRemote = true
+[pull]
+	ff = only
+[submodule]
+	recurse = true
+[rerere]
+	enabled = true
+[commit]
+    gpgsign = true
+[gpg]
+	format = ssh
+[maintenance]
+	strategy=incremental
+	repo = ~/workspace/**
+[merge]
+	tool = vscode
+[mergetool "vscode"]
+	cmd = code --wait --merge $REMOTE $LOCAL $BASE $MERGED
+[diff]
+	tool = vscode
+[difftool "vscode"]
+	cmd = code --wait --diff $LOCAL $REMOTE

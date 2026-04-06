@@ -1,0 +1,99 @@
+#!/bin/bash
+
+FILE="$1"
+SPLIT_COUNT="$2"
+
+if [ -z "$FILE" ] || [ -z "$SPLIT_COUNT" ]; then
+    echo "Usage: $0 <csv_file> <split_count>"
+    exit 1
+fi
+
+if [ ! -f "$FILE" ]; then
+    echo "Error: File '$FILE' not found."
+    exit 1
+fi
+
+if ! [[ "$SPLIT_COUNT" =~ ^[0-9]+$ ]] || [ "$SPLIT_COUNT" -eq 0 ]; then
+    echo "Error: Split count must be a positive integer."
+    exit 1
+fi
+
+# Read header
+header=$(head -n 1 "$FILE")
+
+# Count total data lines (excluding header)
+total_lines=$(tail -n +2 "$FILE" | wc -l)
+
+if [ "$total_lines" -eq 0 ]; then
+    echo "Error: File contains no data (only header)."
+    exit 1
+fi
+
+# Calculate lines per file
+lines_per_file=$((total_lines / SPLIT_COUNT))
+remainder=$((total_lines % SPLIT_COUNT))
+
+if [ "$lines_per_file" -eq 0 ]; then
+    echo "Warning: More files requested ($SPLIT_COUNT) than data lines ($total_lines). Creating $total_lines file(s)."
+    lines_per_file=1
+    SPLIT_COUNT=$total_lines
+    remainder=0
+fi
+
+if [ "$remainder" -gt 0 ]; then
+    echo "Splitting $total_lines lines into $SPLIT_COUNT file(s) of $lines_per_file lines + 1 file with $remainder lines..."
+else
+    echo "Splitting $total_lines lines into $SPLIT_COUNT file(s) of $lines_per_file lines each..."
+fi
+
+# Create output directory
+output_dir="${FILE%.*}_parts"
+mkdir -p "$output_dir"
+
+# Split the file
+part_num=1
+line_count=0
+current_file=""
+
+# Skip header and process data lines
+tail -n +2 "$FILE" | while IFS= read -r line; do
+    # Start new file if needed
+    if [ $line_count -eq 0 ]; then
+        current_file=$(printf "%s/part_%02d.csv" "$output_dir" "$part_num")
+        echo "$header" > "$current_file"
+    fi
+
+    # Write line to current file
+    echo "$line" >> "$current_file"
+    ((line_count++))
+
+    # Start new file after reaching lines_per_file
+    if [ $line_count -eq $lines_per_file ]; then
+        echo "  Part $part_num: $line_count lines"
+        ((part_num++))
+        line_count=0
+    fi
+done
+
+# Report last file if it has content
+if [ $line_count -gt 0 ]; then
+    echo "  Part $part_num: $line_count lines"
+fi
+
+echo "Done! Created $part_num part(s) in $output_dir/"
+
+# Verify line count
+echo "Verifying split..."
+created_lines=0
+for part_file in "$output_dir"/*.csv; do
+    # Count data lines (exclude header)
+    count=$(tail -n +2 "$part_file" | wc -l)
+    created_lines=$((created_lines + count))
+done
+
+if [ "$created_lines" -eq "$total_lines" ]; then
+    echo "✓ Verification passed: $created_lines lines processed correctly"
+else
+    echo "✗ Verification failed: Expected $total_lines lines, but created files contain $created_lines lines"
+    exit 1
+fi
