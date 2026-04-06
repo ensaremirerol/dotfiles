@@ -51,9 +51,21 @@ Toggles a Maastricht University VPN connection via `openconnect`, fetching crede
 
 **Dependencies:** `openconnect`, `bw` (Bitwarden CLI), `jq`, `sudo`
 
-Configure via `~/.vpnrc`:
+**Bitwarden item:** `https://login.maastrichtuniversity.nl/`
+
+| Field | BW source |
+|-------|-----------|
+| Password | password field |
+| TOTP | TOTP field |
+| `VPN_USER` | username field |
+| `AUTH_GROUP` | custom field named `AUTH_GROUP` |
+
+Add a custom field named `AUTH_GROUP` to the BW item with your auth group value (e.g. `Students` or `Employees`).
+
+`~/.vpnrc` can still be used to override any value:
 
 ```sh
+# Optional — overrides what's in Bitwarden
 VPN_USER="your-university-id"
 AUTH_GROUP="your-auth-group"
 ```
