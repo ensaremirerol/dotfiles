@@ -26,10 +26,12 @@ if [[ -n $VIRTUAL_ENV ]]; then
     source "$VIRTUAL_ENV/bin/activate"
 fi
 
+source "$DOTFILES_DIR/path"
+
 # Function to check if required commands are available
 check_command() {
     if ! command -v "$1" > /dev/null 2>&1; then
-        return -1
+        return 1
     fi
     return 0
 }
@@ -37,6 +39,8 @@ check_command() {
 # If zoxide is installed, initialize it
 if check_command "zoxide"; then
     eval "$(zoxide init --cmd cd zsh)"
+else
+    echo "dotfiles: warning: zoxide not found, skipping initialization"
 fi
 
 if check_command "yazi"; then
@@ -49,8 +53,6 @@ if check_command "yazi"; then
     }
 fi
 
-
-source "$DOTFILES_DIR/path"
 source "$DOTFILES_DIR/aliases"
 source "$DOTFILES_DIR/git_aliases"
 if check_command "docker"; then

@@ -4,3 +4,5 @@ alias fman="compgen -c | fzf | xargs man"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
+
+alias claude-p='CLAUDE_CONFIG_DIR="$HOME/.claude-p" claude'
